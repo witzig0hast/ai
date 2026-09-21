@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Base application theme. Compose drives all real theming (see
+         ui/theme/Theme.kt); this XML theme only sets the window background
+         so there's no flash-of-wrong-color before Compose takes over. -->
+    <style name="Theme.Jarvis" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@android:color/white</item>
+        <item name="android:statusBarColor">@android:color/white</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+</resources>

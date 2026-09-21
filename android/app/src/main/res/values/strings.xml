@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Jarvis</string>
+
+    <!-- Home -->
+    <string name="home_dark_mode_toggle">Dunkelmodus umschalten</string>
+    <string name="home_status_sheet_title">Systemstatus</string>
+    <string name="home_status_ollama">Ollama</string>
+    <string name="home_status_stt">Spracherkennung</string>
+    <string name="home_status_tts">Sprachausgabe</string>
+    <string name="home_status_home_assistant">Home Assistant</string>
+    <string name="home_status_n8n">n8n</string>
+    <string name="home_status_up">Aktiv</string>
+    <string name="home_status_down">Nicht erreichbar</string>
+    <string name="home_events_close">Schließen</string>
+
+    <!-- Voice -->
+    <string name="voice_title">Sprachmodus</string>
+    <string name="voice_close">Schließen</string>
+    <string name="voice_switch_to_chat">Zum Chat wechseln</string>
+    <string name="voice_subtitles_toggle">Untertitel</string>
+    <string name="voice_listening">Ich höre zu…</string>
+    <string name="voice_speaking">Jarvis spricht…</string>
+    <string name="voice_connecting">Verbinde…</string>
+    <string name="voice_mic_permission_rationale">Für den Sprachmodus wird Mikrofonzugriff benötigt.</string>
+    <string name="voice_mic_permission_denied">Mikrofonzugriff wurde verweigert. Sprachmodus ist ohne diese Berechtigung nicht möglich.</string>
+    <string name="voice_grant_permission">Berechtigung erteilen</string>
+
+    <!-- Chat -->
+    <string name="chat_title">Chat</string>
+    <string name="chat_input_placeholder">Nachricht an Jarvis…</string>
+    <string name="chat_send">Senden</string>
+    <string name="chat_attach">Datei anhängen</string>
+    <string name="chat_mic">Sprachmodus starten</string>
+    <string name="chat_history">Verlauf</string>
+    <string name="chat_new_conversation">Neue Unterhaltung</string>
+    <string name="chat_uploading">Wird hochgeladen…</string>
+
+    <!-- History -->
+    <string name="history_title">Verlauf</string>
+    <string name="history_empty">Noch keine Unterhaltungen.</string>
+    <string name="history_delete">Löschen</string>
+
+    <!-- Agent switcher -->
+    <string name="agent_switcher_title">Agent wählen</string>
+    <string name="agent_switcher_default_badge">Standard</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Einstellungen</string>
+    <string name="settings_backend_section">Backend</string>
+    <string name="settings_base_url">Backend-URL</string>
+    <string name="settings_base_url_placeholder">https://jarvis.example.tld</string>
+    <string name="settings_token">Geräte-Token</string>
+    <string name="settings_token_placeholder">Bearer-Token</string>
+    <string name="settings_appearance_section">Darstellung</string>
+    <string name="settings_dark_mode">Dunkelmodus</string>
+    <string name="settings_dark_mode_system">Systemeinstellung</string>
+    <string name="settings_dark_mode_light">Immer hell</string>
+    <string name="settings_dark_mode_dark">Immer dunkel</string>
+    <string name="settings_saved">Gespeichert</string>
+
+    <!-- Navigation -->
+    <string name="nav_settings">Einstellungen</string>
+    <string name="nav_back">Zurück</string>
+</resources>
