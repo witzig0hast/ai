@@ -41,8 +41,12 @@ interface JarvisApi {
     @PUT("api/agents/{id}")
     suspend fun updateAgent(@Path("id") id: String, @Body body: Agent): Agent
 
+    // Response<Void> (not Response<Unit>) deliberately: Retrofit's built-in
+    // Void converter skips response-body parsing entirely, so this doesn't
+    // choke on a 204/empty body the way decoding into Unit via the
+    // kotlinx.serialization converter would.
     @DELETE("api/agents/{id}")
-    suspend fun deleteAgent(@Path("id") id: String): Response<Unit>
+    suspend fun deleteAgent(@Path("id") id: String): Response<Void>
 
     @GET("api/conversations")
     suspend fun getConversations(): List<ConversationSummary>
@@ -51,7 +55,7 @@ interface JarvisApi {
     suspend fun getConversation(@Path("id") id: String): ConversationDetail
 
     @DELETE("api/conversations/{id}")
-    suspend fun deleteConversation(@Path("id") id: String): Response<Unit>
+    suspend fun deleteConversation(@Path("id") id: String): Response<Void>
 
     @Multipart
     @POST("api/files")

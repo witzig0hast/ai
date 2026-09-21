@@ -5,6 +5,7 @@
     <!-- Home -->
     <string name="home_dark_mode_toggle">Dunkelmodus umschalten</string>
     <string name="home_status_sheet_title">Systemstatus</string>
+    <string name="home_status_backend">Backend</string>
     <string name="home_status_ollama">Ollama</string>
     <string name="home_status_stt">Spracherkennung</string>
     <string name="home_status_tts">Sprachausgabe</string>

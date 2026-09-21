@@ -1,6 +1,5 @@
 package de.hastnetwork.jarvis.data.repository
 
-import de.hastnetwork.jarvis.data.model.ChatDoneEvent
 import de.hastnetwork.jarvis.data.model.ChatRequest
 import de.hastnetwork.jarvis.data.model.ConversationDetail
 import de.hastnetwork.jarvis.data.model.ConversationSummary
@@ -57,6 +56,3 @@ class ConversationRepository(
         )
     )
 }
-
-/** Convenience re-export so ViewModels only need one import for the "done" payload. */
-typealias ChatDone = ChatDoneEvent
