@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.venv/
+.venv-test/
+data/*.db
+data/uploads/*
+data/voices/*
+!data/uploads/.gitkeep
+!data/voices/.gitkeep
+

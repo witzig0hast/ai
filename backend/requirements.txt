@@ -1,0 +1,22 @@
+# Web framework
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20
+sse-starlette==2.2.1
+websockets==14.1
+
+# Settings & data
+pydantic==2.10.4
+pydantic-settings==2.7.1
+sqlmodel==0.0.22
+
+# LLM / STT / TTS clients
+httpx==0.28.1
+faster-whisper==1.1.1
+TTS==0.22.0
+soundfile==0.13.0
+numpy==1.26.4
+webrtcvad==2.0.10
+
+# Utilities
+python-dotenv==1.0.1

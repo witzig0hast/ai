@@ -1,0 +1,17 @@
+[Unit]
+Description=Jarvis backend (FastAPI, STT/TTS pipeline)
+After=network.target
+# Not "Requires=ollama.service": Ollama is expected to already be running
+# natively and independently on this host (see docs/architecture.md §2).
+
+[Service]
+Type=simple
+User=jarvis
+WorkingDirectory=/opt/jarvis/backend
+EnvironmentFile=/opt/jarvis/backend/.env
+ExecStart=/opt/jarvis/backend/.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
