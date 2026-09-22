@@ -336,6 +336,9 @@ function describeTool(name) {
     create_reminder: "lege Reminder an",
     list_reminders: "prüfe Reminder",
     cancel_reminder: "storniere Reminder",
+    remember_fact: "merke mir das",
+    list_remembered_facts: "prüfe Gedächtnis",
+    forget_fact: "vergesse das",
     home_assistant_call_service: "steuere Home Assistant",
     home_assistant_get_state: "prüfe Home Assistant",
     trigger_n8n_workflow: "starte n8n-Workflow",
@@ -616,6 +619,45 @@ el("reminder-form").addEventListener("submit", async (e) => {
     showToast("Reminder konnte nicht angelegt werden");
   }
 });
+
+// ---------- memory screen ----------
+
+async function enterMemory() {
+  showScreen("memory");
+  await refreshMemory();
+}
+
+async function refreshMemory() {
+  const list = el("memory-list");
+  list.innerHTML = "<p>Lädt …</p>";
+  try {
+    const facts = await api.getMemoryFacts();
+    list.innerHTML = "";
+    if (!facts.length) {
+      list.innerHTML = "<p>Jarvis hat sich noch nichts gemerkt.</p>";
+      return;
+    }
+    for (const f of facts) {
+      const row = document.createElement("div");
+      row.className = "reminder-item";
+      row.innerHTML = `<div><div class="text">${escapeHtml(f.text)}</div></div>`;
+      const deleteBtn = document.createElement("button");
+      deleteBtn.className = "delete-btn";
+      deleteBtn.textContent = "✕";
+      deleteBtn.addEventListener("click", async () => {
+        await api.deleteMemoryFact(f.id);
+        refreshMemory();
+      });
+      row.appendChild(deleteBtn);
+      list.appendChild(row);
+    }
+  } catch (e) {
+    list.innerHTML = "<p>Gedächtnis konnte nicht geladen werden.</p>";
+  }
+}
+
+el("settings-memory-btn").addEventListener("click", enterMemory);
+el("memory-back").addEventListener("click", () => showScreen("settings"));
 
 // ---------- settings screen ----------
 

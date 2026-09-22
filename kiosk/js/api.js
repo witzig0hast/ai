@@ -43,6 +43,9 @@ export const api = {
   createReminder: (text, dueAtIso) => postJson("/api/reminders", { text, due_at: dueAtIso }),
   deleteReminder: (id) => del(`/api/reminders/${id}`),
 
+  getMemoryFacts: () => getJson("/api/memory"),
+  deleteMemoryFact: (id) => del(`/api/memory/${id}`),
+
   /**
    * Sends a chat message and streams the SSE response
    * (docs/architecture.md §5), invoking onEvent({type, data}) for each

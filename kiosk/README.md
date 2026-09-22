@@ -20,6 +20,10 @@ Kiosk-Modus. Implementiert denselben Vertrag wie die Android-App
 - **Reminder**: Liste, Anlegen (Schnellauswahl-Chips oder Datum/Uhrzeit),
   Löschen.
 - **Settings**: Backend-URL, Geräte-Token, Darstellung (System/Hell/Dunkel).
+- **Gedächtnis** (über Settings erreichbar): Liste der Fakten, die sich
+  Jarvis über dich gemerkt hat (`remember_fact`-Tool), mit Lösch-Möglichkeit
+  - reine Transparenz-/Kontroll-Ansicht, Anlegen passiert normalerweise durch
+  den Agenten selbst im Gespräch.
 - Proaktiver `/ws/events`-Kanal mit automatischem Reconnect (Backoff) - fällige
   Reminder erscheinen als Toast, auch außerhalb des Voice-/Chat-Screens.
 

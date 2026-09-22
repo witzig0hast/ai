@@ -125,9 +125,25 @@
         </label>
         <button type="submit" class="pill-btn">Speichern</button>
       </form>
+      <button id="settings-memory-btn" class="pill-btn" style="margin: 0 20px; background: transparent; color: var(--on-surface); border: 1px solid var(--outline);">
+        🧠 Gedächtnis verwalten
+      </button>
       <p class="settings-hint">
         Mikrofonzugriff braucht HTTPS (oder localhost) - siehe kiosk/README.md.
       </p>
+    </section>
+
+    <!-- Memory: transparente Übersicht, was sich der Agent gemerkt hat -->
+    <section id="screen-memory" class="screen">
+      <header class="top-bar">
+        <button id="memory-back" class="icon-btn" aria-label="Zurück">←</button>
+        <span class="screen-title">Gedächtnis</span>
+        <span class="icon-btn-spacer"></span>
+      </header>
+      <p class="settings-hint">
+        Fakten, die sich Jarvis über dich gemerkt hat. Er legt diese meist selbst an (im Gespräch) - hier kannst du sie einsehen und löschen.
+      </p>
+      <div class="reminders-list" id="memory-list"></div>
     </section>
 
   </div>
