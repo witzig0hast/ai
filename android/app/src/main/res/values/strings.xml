@@ -14,6 +14,7 @@
     <string name="home_status_up">Aktiv</string>
     <string name="home_status_down">Nicht erreichbar</string>
     <string name="home_events_close">Schließen</string>
+    <string name="home_reminders_button">Erinnerungen</string>
 
     <!-- Voice -->
     <string name="voice_title">Sprachmodus</string>
@@ -59,6 +60,27 @@
     <string name="settings_dark_mode_light">Immer hell</string>
     <string name="settings_dark_mode_dark">Immer dunkel</string>
     <string name="settings_saved">Gespeichert</string>
+
+    <!-- Reminders -->
+    <string name="reminders_title">Erinnerungen</string>
+    <string name="reminders_empty">Keine offenen Erinnerungen.</string>
+    <string name="reminders_add">Erinnerung hinzufügen</string>
+    <string name="reminders_delete">Löschen</string>
+    <string name="reminders_dialog_title">Neue Erinnerung</string>
+    <string name="reminders_text_label">Woran soll ich dich erinnern?</string>
+    <string name="reminders_quick_pick_label">Schnellauswahl</string>
+    <string name="reminders_quick_10m">in 10 Min</string>
+    <string name="reminders_quick_30m">in 30 Min</string>
+    <string name="reminders_quick_1h">in 1 Std</string>
+    <string name="reminders_quick_3h">in 3 Std</string>
+    <string name="reminders_pick_custom">Datum/Uhrzeit wählen</string>
+    <string name="reminders_create">Erstellen</string>
+    <string name="reminders_cancel">Abbrechen</string>
+
+    <!-- Notifications -->
+    <string name="notification_channel_name">Jarvis</string>
+    <string name="events_service_notification_title">Jarvis ist aktiv</string>
+    <string name="reminder_notification_title">Jarvis erinnert dich</string>
 
     <!-- Navigation -->
     <string name="nav_settings">Einstellungen</string>

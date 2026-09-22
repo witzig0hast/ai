@@ -6,10 +6,13 @@ import de.hastnetwork.jarvis.data.local.SettingsDataStore
 import de.hastnetwork.jarvis.data.remote.AuthInterceptor
 import de.hastnetwork.jarvis.data.remote.ChatSseClient
 import de.hastnetwork.jarvis.data.remote.DynamicBaseUrlInterceptor
+import de.hastnetwork.jarvis.data.remote.EventsSocket
 import de.hastnetwork.jarvis.data.remote.JarvisApi
 import de.hastnetwork.jarvis.data.remote.VoiceSocket
 import de.hastnetwork.jarvis.data.repository.AgentRepository
+import de.hastnetwork.jarvis.data.repository.BriefingRepository
 import de.hastnetwork.jarvis.data.repository.ConversationRepository
+import de.hastnetwork.jarvis.data.repository.ReminderRepository
 import de.hastnetwork.jarvis.data.repository.StatusRepository
 import de.hastnetwork.jarvis.data.repository.VoiceRepository
 import kotlinx.coroutines.CoroutineScope
@@ -83,6 +86,8 @@ class AppContainer(private val appContext: Context) {
     val agentRepository = AgentRepository(api)
     val conversationRepository = ConversationRepository(api, chatSseClient)
     val statusRepository = StatusRepository(api)
+    val reminderRepository = ReminderRepository(api)
+    val briefingRepository = BriefingRepository(api)
 
     init {
         applicationScope.launch {
@@ -101,4 +106,12 @@ class AppContainer(private val appContext: Context) {
         val voiceSocket = VoiceSocket(okHttpClient, settingsProvider, json)
         return VoiceRepository(voiceSocket)
     }
+
+    /**
+     * Creates a new [EventsSocket] for the proactive `/ws/events` push
+     * channel (architecture.md §11). Unlike voice sockets, this is meant to
+     * live as long as [de.hastnetwork.jarvis.JarvisEventsService] does, not
+     * per-screen - the service owns starting/stopping it.
+     */
+    fun createEventsSocket(): EventsSocket = EventsSocket(okHttpClient, settingsProvider, json)
 }

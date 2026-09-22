@@ -85,10 +85,77 @@ and not a crash.
   authoritative fallback per architecture.md §6) and `audio/AudioPlayer.kt`
   (24kHz mono PCM16 streaming playback via `AudioTrack`, with
   `stopAndFlush()` for barge-in).
-- **Screens**: `ui/screens/{home,voice,chat,history,settings}`, wired up in
-  `ui/navigation/JarvisNavHost.kt`. `agentId`/`conversationId` are carried
-  as nav args between Voice and Chat so switching modes continues the same
-  conversation with the same agent.
+- **Screens**: `ui/screens/{home,voice,chat,history,settings,reminders}`,
+  wired up in `ui/navigation/JarvisNavHost.kt`. `agentId`/`conversationId`
+  are carried as nav args between Voice and Chat so switching modes
+  continues the same conversation with the same agent.
+
+## Tool-calling, reminders, briefing/weather, proactive push (architecture.md §9-§13)
+
+The backend was extended after the first pass; the app was updated to match:
+
+- **Tool-calling transparency** (§9): both `ChatSseEvent` (SSE) and
+  `VoiceEvent` (WebSocket) gained `ToolCall`/`ToolResult` variants, parsed
+  in `ChatSseClient.kt`/`VoiceSocket.kt`. `ChatViewModel`/`VoiceViewModel`
+  turn a `ToolCall` into a small `activeToolLabel` string (friendly German
+  label via `ui/components/ToolCallIndicator.kt#toolCallFriendlyLabel`,
+  e.g. "prüfe Wetter"), shown as an unobtrusive "🔧 ... …" line
+  (`ui/components/ToolCallIndicator.kt`) in both Chat (above the input bar)
+  and Voice (between the orb and the captions). It disappears on
+  `tool_result` or the next streamed token, whichever comes first - never a
+  blocking dialog/spinner.
+- **Reminders** (§10): `data/model/Reminder.kt`,
+  `data/repository/ReminderRepository.kt`, `JarvisApi.kt` (`GET/POST
+  /api/reminders`, `DELETE /api/reminders/{id}`), and a new
+  `ui/screens/reminders/{RemindersScreen.kt,RemindersViewModel.kt}` - a
+  list of open (non-fired) reminders with a delete icon per row and a "+"
+  FAB that opens a dialog: reminder text, quick-pick chips (10/30/60/180
+  min from now, create immediately on tap), or a "Datum/Uhrzeit wählen"
+  button using the classic `android.app.DatePickerDialog` +
+  `TimePickerDialog` for an arbitrary due time. Entry point: a bell icon
+  top-left on the Home screen, mirroring the dark-mode toggle top-right.
+- **Briefing + weather** (§12/§13): `data/model/BriefingResponse.kt`,
+  `data/repository/BriefingRepository.kt` (new, alongside
+  `StatusRepository` - kept separate to stay focused), `JarvisApi.kt`
+  (`GET /api/briefing/today`). `HomeViewModel` polls it every 15 minutes
+  and exposes only the `weather` field as a `StateFlow<WeatherInfo?>`;
+  `HomeScreen` renders a small "14°C, klar" line under the date **only**
+  when non-null - same "never show an empty state" principle as the
+  existing calendar ticker. The Voice screen's spoken greeting is now
+  longer (briefing-based instead of a static sentence); no code change was
+  needed there since the caption `Text` already wraps freely with no
+  `maxLines` cap - verified by re-reading `VoiceScreen.kt`'s
+  `CaptionsList`.
+- **Proactive push channel** (§11): `data/remote/EventsSocket.kt` wraps
+  `wss://.../ws/events` - receive-only, with exponential backoff
+  reconnect (2s, doubling, capped at 60s, reset on a successful open).
+  `JarvisEventsService.kt` is a foreground service (`foregroundServiceType
+  ="dataSync"`, channel id `jarvis_events`/"Jarvis") that owns one
+  `EventsSocket` for the process's lifetime and turns `reminder_due`
+  pushes into a normal system notification ("Jarvis erinnert dich" /
+  the reminder text); `briefing_ready` is parsed (forward-compatible) but
+  intentionally a no-op today, per the coordinator's note that the backend
+  doesn't send it yet.
+
+### Notification permission & when the push service starts
+
+**Chosen design: started automatically on app launch, not a Settings
+opt-in toggle.** On `MainActivity` creation, `StartEventsServiceEffect()`
+requests `POST_NOTIFICATIONS` (API 33+ only; a no-op permission before
+that) via the standard Compose `rememberLauncherForActivityResult` flow,
+then starts `JarvisEventsService` via `ContextCompat.startForegroundService`
+**regardless of whether the permission was granted** - a denied permission
+means the service still runs (keeping the reminder-due websocket open is
+harmless and needed for future in-app use), it just can't post the visible
+notification: `JarvisEventsService.postReminderNotification` checks
+`ContextCompat.checkSelfPermission` before calling
+`NotificationManagerCompat.notify` and silently skips if not granted,
+rather than crashing with a `SecurityException`. If a Settings opt-in
+toggle is preferred instead later, add a `DataStore` flag next to
+`darkModeOverride` in `SettingsDataStore.kt`, gate the
+`ContextCompat.startForegroundService` call on it in
+`StartEventsServiceEffect()`, and stop the service (via an `Intent` +
+`stopService`) when the user turns it off.
 
 ## Known limitation: not a system Assistant replacement (yet)
 
@@ -105,7 +172,7 @@ Assistant requires:
    assistant gesture, etc.) inside the `VoiceInteractionSessionService`'s
    own UI rather than a normal `Activity`.
 
-This is intentionally out of scope for this pass (architecture.md §9) and
+This is intentionally out of scope for this pass (architecture.md §14) and
 is the natural next build-out step once the current app is verified
 end-to-end against the backend.
 
@@ -131,6 +198,24 @@ end-to-end against the backend.
   editor.
 - No unit/instrumented tests were written, matching the "no `./gradlew`"
   constraint for this pass - there was no way to run them here.
+- **`BriefingRepository`** was added (like `StatusRepository` before it)
+  beyond the originally suggested file list, for the same reason: keeps
+  `GET /api/briefing/today` out of the other repositories' way.
+- **Push notification service start policy** was left to this pass's
+  judgment per the coordinator's instructions ("app start or a Settings
+  toggle, your choice") - see "Notification permission & when the push
+  service starts" above for the reasoning and the toggle alternative.
+- The reminder due-date "custom" picker uses the classic
+  `android.app.DatePickerDialog`/`TimePickerDialog` (not a Compose Material3
+  date/time picker) to avoid pulling in more experimental M3 APIs than
+  necessary for a small secondary flow; swap it for
+  `DatePicker`/`TimePicker` from `androidx.compose.material3` if a fully
+  in-theme picker UI is wanted later.
+- `JarvisEventsService`'s foreground notification uses
+  `R.drawable.ic_launcher_foreground` as its small icon (reusing the
+  existing adaptive-icon foreground layer, which is already a white
+  silhouette on transparent) rather than adding a dedicated monochrome
+  notification icon asset.
 
 ## Suggested first steps for whoever picks this up
 

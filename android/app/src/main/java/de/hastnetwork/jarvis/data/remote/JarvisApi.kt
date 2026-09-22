@@ -2,10 +2,13 @@ package de.hastnetwork.jarvis.data.remote
 
 import de.hastnetwork.jarvis.data.model.Agent
 import de.hastnetwork.jarvis.data.model.AgentCreateRequest
+import de.hastnetwork.jarvis.data.model.BriefingResponse
 import de.hastnetwork.jarvis.data.model.CalendarEvent
 import de.hastnetwork.jarvis.data.model.ConversationDetail
 import de.hastnetwork.jarvis.data.model.ConversationSummary
 import de.hastnetwork.jarvis.data.model.FileUploadResponse
+import de.hastnetwork.jarvis.data.model.Reminder
+import de.hastnetwork.jarvis.data.model.ReminderCreateRequest
 import de.hastnetwork.jarvis.data.model.StatusResponse
 import okhttp3.MultipartBody
 import retrofit2.Response
@@ -63,4 +66,16 @@ interface JarvisApi {
 
     @GET("api/calendar/upcoming")
     suspend fun getUpcomingEvents(@Query("within_minutes") withinMinutes: Int = 180): List<CalendarEvent>
+
+    @GET("api/reminders")
+    suspend fun getReminders(@Query("include_fired") includeFired: Boolean = false): List<Reminder>
+
+    @POST("api/reminders")
+    suspend fun createReminder(@Body body: ReminderCreateRequest): Reminder
+
+    @DELETE("api/reminders/{id}")
+    suspend fun deleteReminder(@Path("id") id: String): Response<Void>
+
+    @GET("api/briefing/today")
+    suspend fun getTodayBriefing(): BriefingResponse
 }

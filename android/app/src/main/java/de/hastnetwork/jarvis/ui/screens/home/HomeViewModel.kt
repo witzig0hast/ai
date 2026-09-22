@@ -7,6 +7,8 @@ import de.hastnetwork.jarvis.data.local.DarkModeOverride
 import de.hastnetwork.jarvis.data.local.SettingsDataStore
 import de.hastnetwork.jarvis.data.model.CalendarEvent
 import de.hastnetwork.jarvis.data.model.StatusResponse
+import de.hastnetwork.jarvis.data.model.WeatherInfo
+import de.hastnetwork.jarvis.data.repository.BriefingRepository
 import de.hastnetwork.jarvis.data.repository.StatusRepository
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,14 +19,22 @@ import kotlinx.coroutines.launch
 private const val STATUS_POLL_INTERVAL_MS = 30_000L
 private const val EVENTS_POLL_INTERVAL_MS = 60_000L
 private const val EVENTS_SHOW_DURATION_MS = 10_000L
+private const val BRIEFING_POLL_INTERVAL_MS = 15 * 60_000L
 
 class HomeViewModel(
     private val statusRepository: StatusRepository,
     private val settingsDataStore: SettingsDataStore,
+    private val briefingRepository: BriefingRepository,
 ) : ViewModel() {
 
     private val _status = MutableStateFlow<StatusResponse?>(null)
     val status: StateFlow<StatusResponse?> = _status.asStateFlow()
+
+    // Never shown in an "empty" state - null simply means "don't render the
+    // chip", same principle as the events ticker (architecture.md §12/§13:
+    // weather is null whenever HOME_LATITUDE/HOME_LONGITUDE aren't set).
+    private val _weather = MutableStateFlow<WeatherInfo?>(null)
+    val weather: StateFlow<WeatherInfo?> = _weather.asStateFlow()
 
     private val _tickerEvents = MutableStateFlow<List<CalendarEvent>>(emptyList())
     val tickerEvents: StateFlow<List<CalendarEvent>> = _tickerEvents.asStateFlow()
@@ -60,6 +70,14 @@ class HomeViewModel(
                     _tickerVisible.value = false
                 }
                 delay(EVENTS_POLL_INTERVAL_MS)
+            }
+        }
+        viewModelScope.launch {
+            while (true) {
+                briefingRepository.getTodayBriefing()
+                    .onSuccess { _weather.value = it.weather }
+                    .onFailure { _weather.value = null }
+                delay(BRIEFING_POLL_INTERVAL_MS)
             }
         }
     }

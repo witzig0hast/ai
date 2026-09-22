@@ -10,6 +10,7 @@ import de.hastnetwork.jarvis.data.model.Message
 import de.hastnetwork.jarvis.data.remote.ChatSseEvent
 import de.hastnetwork.jarvis.data.repository.AgentRepository
 import de.hastnetwork.jarvis.data.repository.ConversationRepository
+import de.hastnetwork.jarvis.ui.components.toolCallFriendlyLabel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -30,6 +31,7 @@ data class ChatUiState(
     val isUploading: Boolean = false,
     val isStreaming: Boolean = false,
     val errorMessage: String? = null,
+    val activeToolLabel: String? = null,
 )
 
 /**
@@ -176,6 +178,19 @@ class ChatViewModel(
                     is ChatSseEvent.Token -> {
                         streamedText += event.text
                         replaceMessage(streamingId, streamingPlaceholder.copy(content = streamedText))
+                        // Disappears once the result arrives OR the next text
+                        // token comes in, whichever is first (per spec).
+                        if (_uiState.value.activeToolLabel != null) {
+                            _uiState.value = _uiState.value.copy(activeToolLabel = null)
+                        }
+                    }
+
+                    is ChatSseEvent.ToolCall -> {
+                        _uiState.value = _uiState.value.copy(activeToolLabel = toolCallFriendlyLabel(event.name))
+                    }
+
+                    is ChatSseEvent.ToolResult -> {
+                        _uiState.value = _uiState.value.copy(activeToolLabel = null)
                     }
 
                     is ChatSseEvent.Done -> {
@@ -187,13 +202,14 @@ class ChatViewModel(
                         replaceMessage(streamingId, finalMessage)
                         _uiState.value = _uiState.value.copy(
                             isStreaming = false,
+                            activeToolLabel = null,
                             conversationId = finalMessage.conversationId.ifBlank { _uiState.value.conversationId },
                         )
                     }
 
                     is ChatSseEvent.Error -> {
                         replaceMessage(streamingId, streamingPlaceholder.copy(content = "⚠️ ${event.message}"))
-                        _uiState.value = _uiState.value.copy(isStreaming = false, errorMessage = event.message)
+                        _uiState.value = _uiState.value.copy(isStreaming = false, activeToolLabel = null, errorMessage = event.message)
                     }
                 }
             }

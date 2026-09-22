@@ -5,12 +5,15 @@ import de.hastnetwork.jarvis.data.model.ChatDoneEvent
 import de.hastnetwork.jarvis.data.model.ChatErrorEvent
 import de.hastnetwork.jarvis.data.model.ChatRequest
 import de.hastnetwork.jarvis.data.model.ChatTokenEvent
+import de.hastnetwork.jarvis.data.model.ChatToolCallEvent
+import de.hastnetwork.jarvis.data.model.ChatToolResultEvent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 import okhttp3.Call
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -21,6 +24,10 @@ import java.io.IOException
 sealed class ChatSseEvent {
     data class Token(val text: String) : ChatSseEvent()
     data class Done(val event: ChatDoneEvent) : ChatSseEvent()
+    /** Purely informational (architecture.md §9) - the agent is invoking a tool. */
+    data class ToolCall(val name: String, val arguments: JsonObject) : ChatSseEvent()
+    /** Purely informational - the tool call above has returned. */
+    data class ToolResult(val name: String, val result: JsonObject) : ChatSseEvent()
     data class Error(val message: String) : ChatSseEvent()
 }
 
@@ -79,6 +86,14 @@ class ChatSseClient(
                     "done" -> runCatching {
                         json.decodeFromString(ChatDoneEvent.serializer(), data)
                     }.onSuccess { trySend(ChatSseEvent.Done(it)) }
+
+                    "tool_call" -> runCatching {
+                        json.decodeFromString(ChatToolCallEvent.serializer(), data)
+                    }.onSuccess { trySend(ChatSseEvent.ToolCall(it.name, it.arguments)) }
+
+                    "tool_result" -> runCatching {
+                        json.decodeFromString(ChatToolResultEvent.serializer(), data)
+                    }.onSuccess { trySend(ChatSseEvent.ToolResult(it.name, it.result)) }
 
                     "error" -> runCatching {
                         json.decodeFromString(ChatErrorEvent.serializer(), data)

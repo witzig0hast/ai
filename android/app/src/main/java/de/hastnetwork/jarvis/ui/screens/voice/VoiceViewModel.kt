@@ -9,6 +9,7 @@ import de.hastnetwork.jarvis.data.remote.VoiceEvent
 import de.hastnetwork.jarvis.data.repository.AgentRepository
 import de.hastnetwork.jarvis.data.repository.VoiceRepository
 import de.hastnetwork.jarvis.ui.components.VoiceOrbState
+import de.hastnetwork.jarvis.ui.components.toolCallFriendlyLabel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -34,6 +35,7 @@ data class VoiceUiState(
     val captions: List<CaptionEntry> = emptyList(),
     val errorMessage: String? = null,
     val micPermissionGranted: Boolean = false,
+    val activeToolLabel: String? = null,
 )
 
 class VoiceViewModel(
@@ -121,6 +123,11 @@ class VoiceViewModel(
             is VoiceEvent.LlmToken -> {
                 assistantTokenBuffer.append(event.text)
                 upsertAssistantStreaming(assistantTokenBuffer.toString())
+                // The tool-call indicator disappears once the result arrives
+                // OR the next text token comes in, whichever is first.
+                if (_uiState.value.activeToolLabel != null) {
+                    _uiState.value = _uiState.value.copy(activeToolLabel = null)
+                }
             }
 
             VoiceEvent.TtsStart -> {
@@ -139,6 +146,14 @@ class VoiceViewModel(
             is VoiceEvent.LlmDone -> {
                 finalizeAssistantCaption(event.fullText)
                 assistantTokenBuffer = StringBuilder()
+            }
+
+            is VoiceEvent.ToolCall -> {
+                _uiState.value = _uiState.value.copy(activeToolLabel = toolCallFriendlyLabel(event.name))
+            }
+
+            is VoiceEvent.ToolResult -> {
+                _uiState.value = _uiState.value.copy(activeToolLabel = null)
             }
 
             is VoiceEvent.Error -> {

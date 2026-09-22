@@ -2,6 +2,7 @@ package de.hastnetwork.jarvis.data.model
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonObject
 
 /** Body of `POST /api/chat` (architecture.md §5). */
 @Serializable
@@ -26,6 +27,20 @@ data class ChatDoneEvent(
 /** Payload of the SSE `event: error` frame. */
 @Serializable
 data class ChatErrorEvent(val message: String)
+
+/** Payload of the SSE `event: tool_call` frame (architecture.md §9, purely informational). */
+@Serializable
+data class ChatToolCallEvent(
+    val name: String,
+    val arguments: JsonObject = JsonObject(emptyMap()),
+)
+
+/** Payload of the SSE `event: tool_result` frame (architecture.md §9, purely informational). */
+@Serializable
+data class ChatToolResultEvent(
+    val name: String,
+    val result: JsonObject = JsonObject(emptyMap()),
+)
 
 /** Generic API error envelope: `{"error": {"code": str, "message": str}}`. */
 @Serializable

@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.LightMode
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -46,23 +47,25 @@ import kotlinx.coroutines.delay
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import kotlin.math.roundToInt
 
 private val clockFormatter = DateTimeFormatter.ofPattern("HH:mm")
 private val dateFormatter = DateTimeFormatter.ofPattern("EEEE, d. MMMM", Locale.GERMAN)
 
 @Composable
-fun HomeScreen(onOpenVoice: () -> Unit, onOpenSettings: () -> Unit) {
+fun HomeScreen(onOpenVoice: () -> Unit, onOpenSettings: () -> Unit, onOpenReminders: () -> Unit) {
     val app = LocalContext.current.applicationContext as JarvisApp
     val container = app.container
     val viewModel: HomeViewModel = viewModel(
         factory = viewModelFactory {
-            initializer { HomeViewModel(container.statusRepository, container.settingsDataStore) }
+            initializer { HomeViewModel(container.statusRepository, container.settingsDataStore, container.briefingRepository) }
         }
     )
 
     val status by viewModel.status.collectAsState()
     val tickerEvents by viewModel.tickerEvents.collectAsState()
     val tickerVisible by viewModel.tickerVisible.collectAsState()
+    val weather by viewModel.weather.collectAsState()
     val settings by viewModel.settings.collectAsState()
     val isDark = rememberIsDarkTheme(settings.darkModeOverride)
 
@@ -87,22 +90,28 @@ fun HomeScreen(onOpenVoice: () -> Unit, onOpenSettings: () -> Unit) {
                     onClick = onOpenVoice,
                 ),
         ) {
-            // Top row: settings + dark-mode toggle, top-right corner.
+            // Top row: reminders bell top-left, settings + dark-mode toggle
+            // top-right - mirrored, same dezent/unobtrusive icon-button style.
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .safeDrawingPadding()
-                    .padding(top = 4.dp, end = 4.dp),
-                horizontalArrangement = Arrangement.End,
+                    .padding(horizontal = 4.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                IconButton(onClick = onOpenSettings) {
-                    Icon(imageVector = Icons.Filled.Settings, contentDescription = stringResource(R.string.nav_settings))
+                IconButton(onClick = onOpenReminders) {
+                    Icon(imageVector = Icons.Filled.Notifications, contentDescription = stringResource(R.string.home_reminders_button))
                 }
-                IconButton(onClick = { viewModel.toggleDarkMode(isDark) }) {
-                    Icon(
-                        imageVector = if (isDark) Icons.Filled.LightMode else Icons.Filled.DarkMode,
-                        contentDescription = stringResource(R.string.home_dark_mode_toggle),
-                    )
+                Row {
+                    IconButton(onClick = onOpenSettings) {
+                        Icon(imageVector = Icons.Filled.Settings, contentDescription = stringResource(R.string.nav_settings))
+                    }
+                    IconButton(onClick = { viewModel.toggleDarkMode(isDark) }) {
+                        Icon(
+                            imageVector = if (isDark) Icons.Filled.LightMode else Icons.Filled.DarkMode,
+                            contentDescription = stringResource(R.string.home_dark_mode_toggle),
+                        )
+                    }
                 }
             }
 
@@ -123,6 +132,15 @@ fun HomeScreen(onOpenVoice: () -> Unit, onOpenSettings: () -> Unit) {
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                // Never an empty-state chip: weather is simply absent from
+                // the layout until the briefing actually has data.
+                if (weather != null) {
+                    Text(
+                        text = "${weather!!.temperatureC.roundToInt()}°C, ${weather!!.condition}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
 
             // Bottom: subtle service-status row.

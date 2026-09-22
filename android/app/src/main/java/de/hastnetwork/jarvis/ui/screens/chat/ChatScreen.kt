@@ -54,6 +54,7 @@ import de.hastnetwork.jarvis.ui.components.AgentAvatar
 import de.hastnetwork.jarvis.ui.components.AgentSwitcherSheet
 import de.hastnetwork.jarvis.ui.components.ChatBubble
 import de.hastnetwork.jarvis.ui.components.SuggestionChips
+import de.hastnetwork.jarvis.ui.components.ToolCallIndicator
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -133,6 +134,7 @@ fun ChatScreen(
                 onInputTextChange = viewModel::onInputTextChange,
                 pendingAttachments = state.pendingAttachments,
                 isUploading = state.isUploading,
+                activeToolLabel = state.activeToolLabel,
                 onRemoveAttachment = viewModel::removePendingAttachment,
                 onAttachClick = { filePickerLauncher.launch("*/*") },
                 onSendClick = { viewModel.sendMessage() },
@@ -209,12 +211,15 @@ private fun ChatInputBar(
     onInputTextChange: (String) -> Unit,
     pendingAttachments: List<PendingAttachment>,
     isUploading: Boolean,
+    activeToolLabel: String?,
     onRemoveAttachment: (String) -> Unit,
     onAttachClick: () -> Unit,
     onSendClick: () -> Unit,
     onMicClick: () -> Unit,
 ) {
     Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
+        ToolCallIndicator(label = activeToolLabel, modifier = Modifier.padding(start = 4.dp))
+
         if (pendingAttachments.isNotEmpty() || isUploading) {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),

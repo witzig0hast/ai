@@ -54,6 +54,7 @@ import de.hastnetwork.jarvis.audio.AudioPlayer
 import de.hastnetwork.jarvis.audio.AudioRecorder
 import de.hastnetwork.jarvis.ui.components.AgentAvatar
 import de.hastnetwork.jarvis.ui.components.AgentSwitcherSheet
+import de.hastnetwork.jarvis.ui.components.ToolCallIndicator
 import de.hastnetwork.jarvis.ui.components.VoiceOrb
 import de.hastnetwork.jarvis.ui.components.VoiceOrbState
 
@@ -183,6 +184,8 @@ fun VoiceScreen(
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+
+            ToolCallIndicator(label = state.activeToolLabel)
 
             Spacer(Modifier.height(16.dp))
 

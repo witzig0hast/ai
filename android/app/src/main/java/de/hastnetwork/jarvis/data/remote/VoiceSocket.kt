@@ -8,6 +8,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -30,6 +31,10 @@ sealed class VoiceEvent {
     data class AudioChunk(val pcm16le24k: ByteArray) : VoiceEvent()
     object TtsEnd : VoiceEvent()
     data class LlmDone(val fullText: String, val suggestions: List<String>) : VoiceEvent()
+    /** Purely informational (architecture.md §9) - the agent is invoking a tool. */
+    data class ToolCall(val name: String, val arguments: JsonObject) : VoiceEvent()
+    /** Purely informational - the tool call above has returned. */
+    data class ToolResult(val name: String, val result: JsonObject) : VoiceEvent()
     data class Error(val message: String) : VoiceEvent()
     /** Not part of the wire protocol - emitted locally when the socket closes/fails. */
     data class ConnectionClosed(val reason: String?) : VoiceEvent()
@@ -123,6 +128,14 @@ class VoiceSocket(
                     val wire = json.decodeFromJsonElement(LlmDoneWire.serializer(), obj)
                     VoiceEvent.LlmDone(wire.fullText, wire.suggestions)
                 }
+                "tool_call" -> VoiceEvent.ToolCall(
+                    name = obj.stringOrEmpty("name"),
+                    arguments = (obj["arguments"] as? JsonObject) ?: JsonObject(emptyMap()),
+                )
+                "tool_result" -> VoiceEvent.ToolResult(
+                    name = obj.stringOrEmpty("name"),
+                    result = (obj["result"] as? JsonObject) ?: JsonObject(emptyMap()),
+                )
                 "error" -> VoiceEvent.Error(obj.stringOrEmpty("message"))
                 else -> null
             }
