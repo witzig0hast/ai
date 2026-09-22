@@ -33,6 +33,16 @@ class Settings(BaseSettings):
     n8n_base_url: str = "http://localhost:5678"
     n8n_webhook_token: str = ""
 
+    home_latitude: float | None = None
+    home_longitude: float | None = None
+    timezone: str = "Europe/Berlin"
+
+    reminder_poll_interval_seconds: float = 15.0
+
+    @property
+    def weather_configured(self) -> bool:
+        return self.home_latitude is not None and self.home_longitude is not None
+
     @property
     def device_token_set(self) -> set[str]:
         return {t.strip() for t in self.device_tokens.split(",") if t.strip()}

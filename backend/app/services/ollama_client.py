@@ -26,13 +26,20 @@ class OllamaClient:
         except httpx.HTTPError:
             return False
 
-    async def chat_stream(
+    async def chat_stream_raw(
         self,
         model: str,
-        messages: list[dict[str, str]],
-    ) -> AsyncIterator[str]:
-        """Yields response text tokens as they arrive from Ollama's /api/chat."""
-        payload = {"model": model, "messages": messages, "stream": True}
+        messages: list[dict],
+        tools: list[dict] | None = None,
+    ) -> AsyncIterator[dict]:
+        """Yields raw Ollama /api/chat streaming chunks (dicts with a
+        "message" key holding "content" and/or "tool_calls"). Used by
+        app/services/tool_loop.py, which needs to distinguish a tool-call
+        round from a plain content round - chat_stream() below only exposes
+        the flattened text and can't make that distinction."""
+        payload: dict = {"model": model, "messages": messages, "stream": True}
+        if tools:
+            payload["tools"] = tools
         async with httpx.AsyncClient(timeout=None) as client:
             async with client.stream(
                 "POST", f"{self.base_url}/api/chat", json=payload
@@ -42,11 +49,20 @@ class OllamaClient:
                     if not line.strip():
                         continue
                     chunk = json.loads(line)
-                    token = chunk.get("message", {}).get("content", "")
-                    if token:
-                        yield token
+                    yield chunk
                     if chunk.get("done"):
                         break
+
+    async def chat_stream(
+        self,
+        model: str,
+        messages: list[dict[str, str]],
+    ) -> AsyncIterator[str]:
+        """Yields response text tokens as they arrive from Ollama's /api/chat."""
+        async for chunk in self.chat_stream_raw(model, messages):
+            token = chunk.get("message", {}).get("content", "")
+            if token:
+                yield token
 
     async def chat_once(self, model: str, messages: list[dict[str, str]]) -> str:
         """Non-streaming helper for short auxiliary calls (e.g. suggestion

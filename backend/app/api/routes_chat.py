@@ -12,6 +12,7 @@ from app.models.conversation import Conversation, Message, MessageRead
 from app.services.agent_service import ensure_default_agent
 from app.services.ollama_client import OllamaClient
 from app.services.suggestions import generate_suggestions
+from app.services.tool_loop import run_chat_with_tools
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
 
@@ -63,9 +64,22 @@ async def chat(
         client = OllamaClient()
         full_text = ""
         try:
-            async for token in client.chat_stream(agent_model, ollama_messages):
-                full_text += token
-                yield {"event": "token", "data": json.dumps({"text": token})}
+            async for event in run_chat_with_tools(
+                client, agent_model, ollama_messages, conversation_id
+            ):
+                if event.kind == "token":
+                    full_text += event.text or ""
+                    yield {"event": "token", "data": json.dumps({"text": event.text})}
+                elif event.kind == "tool_call":
+                    yield {
+                        "event": "tool_call",
+                        "data": json.dumps({"name": event.name, "arguments": event.arguments}),
+                    }
+                elif event.kind == "tool_result":
+                    yield {
+                        "event": "tool_result",
+                        "data": json.dumps({"name": event.name, "result": event.result}),
+                    }
         except Exception as exc:  # noqa: BLE001 - surfaced to the client as-is
             yield {"event": "error", "data": json.dumps({"message": str(exc)})}
             return

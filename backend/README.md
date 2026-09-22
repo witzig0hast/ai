@@ -82,10 +82,44 @@ Ollama + Modelle).
 Aktuell bewusst nur Stub-Clients (`app/services/integrations/`), per
 `HOME_ASSISTANT_ENABLED=false` / `N8N_ENABLED=false` deaktiviert — der Agent
 soll nicht zwingend über Home Assistant laufen, das ist ein späterer
-Ausbauschritt (siehe `docs/architecture.md` §8).
+Ausbauschritt (siehe `docs/architecture.md` §8). Sobald aktiviert, sind sie
+auch als Tools nutzbar (siehe unten).
+
+## Neue Fähigkeiten: Tool-Calling, Reminder, Wetter, Briefing, Push-Events
+
+Der Agent kann jetzt tatsächlich etwas tun, nicht nur reden — Details im
+Vertrag unter `docs/architecture.md` §9–§13. Kurzfassung:
+
+- **Tool-Calling** (`app/services/tools.py`, `app/services/tool_loop.py`):
+  Modelle mit Tool-Support (z. B. `llama3.1`) können `get_current_time`,
+  `get_weather`, `create_reminder`/`list_reminders`/`cancel_reminder` sowie
+  (falls aktiviert) `home_assistant_call_service`/`home_assistant_get_state`/
+  `trigger_n8n_workflow` aufrufen — sowohl im Text-Chat als auch im
+  Sprachdialog. Läuft transparent: normale Antworten ohne Tool-Bedarf
+  streamen weiterhin Token für Token wie bisher, nur wenn das Modell
+  tatsächlich ein Tool anfragt, gibt es eine (unsichtbare) Zwischenrunde.
+- **Reminder/Timer**: `/api/reminders` (CRUD) + ein Hintergrund-Task
+  (`app/services/reminder_scheduler.py`), der fällige Reminder alle
+  `REMINDER_POLL_INTERVAL_SECONDS` erkennt und über `/ws/events` pusht.
+- **Wetter**: `app/services/weather_service.py` nutzt die kostenlose,
+  key-lose Open-Meteo-API. Ohne `HOME_LATITUDE`/`HOME_LONGITUDE` in `.env`
+  bleibt das Feature inaktiv (kein Fehler, einfach kein Wetter in
+  Tool-Antworten/Briefing).
+- **Tages-Briefing**: `GET /api/briefing/today` fasst Wetter + offene
+  Reminder + (später) Kalendertermine in einem kurzen, vom LLM formulierten
+  Satz zusammen. Wird auch als gesprochene Begrüßung beim Betreten des
+  Voice-Screens verwendet (`greeting_text` in `/ws/voice`).
+- **Proaktiver Event-Kanal**: `/ws/events` — reine Server→Client-Pushes
+  (`reminder_due`, künftig `briefing_ready`), unabhängig vom Voice-Channel,
+  damit die App auch ohne offenen Chat/Voice-Screen benachrichtigen kann.
+- **Satzweises TTS-Streaming**: `/ws/voice` synthetisiert jetzt Satz für
+  Satz, sobald ein Satz vom LLM fertig generiert ist (statt auf die
+  komplette Antwort zu warten) — spürbar niedrigere Latenz bis zur ersten
+  hörbaren Antwort im Live-Gespräch (`app/services/sentence_splitter.py`).
 
 ## Bekannte Einschränkungen
 
-Siehe `docs/architecture.md` §9 (Auth ist ein einfacher geteilter
+Siehe `docs/architecture.md` §14 (Auth ist ein einfacher geteilter
 Bearer-Token, kein OAuth/mTLS — für den Domain-Einsatz vor Produktivbetrieb
-härten).
+härten). Die Tool-Loop begrenzt sich auf maximal 4 Runden pro Anfrage, um
+Endlosschleifen zu verhindern.

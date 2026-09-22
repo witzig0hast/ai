@@ -201,7 +201,98 @@ Erweiterung später. Aktueller Stand:
   deaktiviert. `/api/status` meldet sie dann korrekt als `false`, ohne
   Fehler zu werfen. Aktivierung erfolgt später per `.env`.
 
-## 9. Bekannte Einschränkungen dieses Grundgerüsts
+## 9. Erweiterung: Tool-Calling ("Jarvis kann etwas tun")
+
+Ab dieser Ausbaustufe kann der Agent nicht mehr nur reden, sondern echte
+Aktionen ausführen. Sowohl `POST /api/chat` als auch `/ws/voice` laufen
+intern über dieselbe agentische Schleife (`app/services/tool_loop.py`):
+Ollama wird mit einer Tool-Liste (JSON-Schema, siehe Ollama `/api/chat`
+`tools`-Feld) aufgerufen; enthält die Antwort `tool_calls`, werden diese
+serverseitig ausgeführt, die Ergebnisse als `tool`-Message zurück an Ollama
+gegeben, und die Schleife wiederholt sich (max. 4 Runden), bis eine normale
+Text-Antwort kommt. Nur Modelle mit Tool-Support (z. B. `llama3.1`) nutzen
+das produktiv; andere ignorieren das `tools`-Feld einfach.
+
+Verfügbare Tools (`app/services/tools.py`):
+- `get_current_time` – aktuelles Datum/Uhrzeit (Europe/Berlin)
+- `get_weather` – aktuelles Wetter + Kurzvorhersage über Open-Meteo (kein
+  API-Key nötig), Standort aus `HOME_LATITUDE`/`HOME_LONGITUDE`
+- `create_reminder` – legt einen Reminder an (Text + Fälligkeitszeitpunkt)
+- `list_reminders` – offene Reminder auflisten
+- `cancel_reminder` – Reminder per ID stornieren
+- `home_assistant_call_service` / `home_assistant_get_state` – nur wirksam,
+  wenn `HOME_ASSISTANT_ENABLED=true`, sonst liefert das Tool einen Hinweis
+  statt eines Fehlers
+- `trigger_n8n_workflow` – analog, nur bei `N8N_ENABLED=true`
+
+Neue SSE-/WS-Event-Typen für Transparenz in der UI (beide Kanäle):
+- SSE `event: tool_call` `data: {"name": "...", "arguments": {...}}`
+- SSE `event: tool_result` `data: {"name": "...", "result": {...}}`
+- WS Text `{"type":"tool_call","name":"...","arguments":{...}}`
+- WS Text `{"type":"tool_result","name":"...","result":{...}}`
+Diese Events sind rein informativ (z. B. "🔧 prüfe Wetter …" in der UI
+anzeigen) und müssen von Clients ignoriert werden können.
+
+## 10. Erweiterung: Reminder/Timer
+
+```
+Reminder
+  id: str (uuid)
+  text: str
+  due_at: datetime
+  created_at: datetime
+  fired: bool
+  conversation_id: str | null   # falls per Sprach-/Chat-Dialog erstellt
+```
+
+REST unter `/api/reminders`:
+- `GET /api/reminders?include_fired=false` → `Reminder[]`
+- `POST /api/reminders` `{"text": "...", "due_at": "ISO8601"}` → `Reminder`
+- `DELETE /api/reminders/{id}`
+
+Ein Hintergrund-Task im Backend (`app/services/reminder_scheduler.py`, in
+`lifespan` gestartet, prüft alle 15s fällige Reminder) markiert fällige
+Reminder als `fired` und published ein Event über den neuen Event-Kanal
+(§12). Das Anlegen/Auflisten/Stornieren funktioniert außerdem als Tool
+(§10), damit man Reminder direkt im Sprach-/Chat-Dialog setzen kann
+("Erinnere mich in 20 Minuten ans Wäsche aufhängen").
+
+## 11. Erweiterung: Proaktiver Event-Kanal — `wss://.../ws/events?token=<token>`
+
+Separat vom Voice-Kanal: eine leichte, langlebige Verbindung, über die das
+Backend **von sich aus** Ereignisse an die App pushen kann, auch wenn gerade
+kein Chat/Voice-Screen offen ist (z. B. für System-Notifications). Nur
+Server → Client, keine Client-Nachrichten außer dem impliziten
+Verbindungsaufbau.
+
+| Typ | Payload |
+|---|---|
+| `{"type":"reminder_due","reminder":{"id":"...","text":"..."}}` | Reminder ist fällig |
+| `{"type":"briefing_ready","summary":"..."}` | neues Tages-Briefing verfügbar (§13) |
+
+Die Android-App hält dafür einen leichtgewichtigen Foreground-Service mit
+automatischem Reconnect (Backoff) und zeigt eingehende Events als normale
+System-Notification an (siehe `android/README.md`).
+
+## 12. Erweiterung: Tages-Briefing
+
+`GET /api/briefing/today` → `{"summary": "...", "weather": {...},
+"upcoming_events": [...], "open_reminders": [...]}`. `summary` ist ein kurzer,
+vom LLM formulierter Fließtext aus Wetter + anstehenden Terminen (§5, aktuell
+Stub) + offenen Remindern. Wird zweifach genutzt:
+- Von der Android-App optional auf dem Home-Screen angezeigt.
+- Als Grundlage für die gesprochene Begrüßung beim Betreten des
+  Voice-Screens (`greeting_text`, §6) — die Begrüßung ist ab jetzt kein
+  statischer Satz mehr, sondern "Hallo, hier ist Jarvis. " + `summary`.
+
+## 13. Erweiterung: Wetter
+
+`app/services/weather_service.py` spricht die kostenlose, key-lose
+Open-Meteo-API an (`HOME_LATITUDE`/`HOME_LONGITUDE` in `.env`). Ohne
+gesetzte Koordinaten bleibt das Feature inaktiv (Tool liefert einen
+Hinweistext statt eines Fehlers, Briefing lässt den Wetterteil einfach weg).
+
+## 14. Bekannte Einschränkungen dieses Grundgerüsts
 
 - Auth ist ein einfacher geteilter Bearer-Token pro Gerät, kein OAuth/mTLS –
   für den öffentlichen Domain-Einsatz sollte das vor Produktivbetrieb

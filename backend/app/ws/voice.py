@@ -9,9 +9,12 @@ from app.database import engine
 from app.models.agent import Agent
 from app.models.conversation import Conversation, Message
 from app.services.agent_service import ensure_default_agent
+from app.services.briefing_service import compose_briefing
 from app.services.ollama_client import OllamaClient
+from app.services.sentence_splitter import split_ready_sentence
 from app.services.stt_service import get_stt_service
 from app.services.suggestions import generate_suggestions
+from app.services.tool_loop import run_chat_with_tools
 from app.services.tts_service import get_tts_service
 
 router = APIRouter()
@@ -126,9 +129,12 @@ async def _start_utterance_response(session: VoiceSession) -> None:
 
 
 async def _speak_greeting(session: VoiceSession) -> None:
-    greeting_text = f"Hallo, hier ist {session.agent.name}. Wie kann ich helfen?"
+    briefing = await compose_briefing(session.agent.ollama_model)
+    greeting_text = f"Hallo, hier ist {session.agent.name}. {briefing['summary']}".strip()
     await session.send_json({"type": "greeting_text", "text": greeting_text})
-    await _speak(session, greeting_text)
+    await session.send_json({"type": "tts_start"})
+    await _speak_chunk(session, greeting_text)
+    await session.send_json({"type": "tts_end"})
 
 
 async def _handle_utterance(session: VoiceSession, pcm_bytes: bytes) -> None:
@@ -157,15 +163,52 @@ async def _handle_utterance(session: VoiceSession, pcm_bytes: bytes) -> None:
 
     client = OllamaClient()
     full_text = ""
+    sentence_buffer = ""
+    tts_started = False
+
+    async def flush_sentence(text: str) -> None:
+        nonlocal tts_started
+        text = text.strip()
+        if not text:
+            return
+        if not tts_started:
+            await session.send_json({"type": "tts_start"})
+            tts_started = True
+        await _speak_chunk(session, text)
+
     try:
-        async for token in client.chat_stream(session.agent.ollama_model, ollama_messages):
-            full_text += token
-            await session.send_json({"type": "llm_token", "text": token})
+        async for event in run_chat_with_tools(
+            client, session.agent.ollama_model, ollama_messages, session.conversation_id
+        ):
+            if event.kind == "tool_call":
+                await session.send_json(
+                    {"type": "tool_call", "name": event.name, "arguments": event.arguments}
+                )
+            elif event.kind == "tool_result":
+                await session.send_json(
+                    {"type": "tool_result", "name": event.name, "result": event.result}
+                )
+            elif event.kind == "token":
+                token = event.text or ""
+                full_text += token
+                await session.send_json({"type": "llm_token", "text": token})
+
+                sentence_buffer += token
+                # Speak completed sentences as soon as they're ready instead
+                # of waiting for the whole answer - cuts perceived latency
+                # in the live voice dialog (docs/architecture.md §9/§6).
+                sentence, sentence_buffer = split_ready_sentence(sentence_buffer)
+                if sentence:
+                    await flush_sentence(sentence)
     except asyncio.CancelledError:
         raise
     except Exception as exc:  # noqa: BLE001 - surfaced to the client as-is
         await session.send_json({"type": "error", "message": str(exc)})
         return
+
+    await flush_sentence(sentence_buffer)
+    if tts_started:
+        await session.send_json({"type": "tts_end"})
 
     suggestions = await generate_suggestions(client, session.agent.ollama_model, full_text)
 
@@ -183,14 +226,15 @@ async def _handle_utterance(session: VoiceSession, pcm_bytes: bytes) -> None:
     await session.send_json(
         {"type": "llm_done", "full_text": full_text, "suggestions": suggestions}
     )
-    await _speak(session, full_text)
 
 
-async def _speak(session: VoiceSession, text: str) -> None:
+async def _speak_chunk(session: VoiceSession, text: str) -> None:
+    """Synthesizes and streams one chunk (sentence or greeting) of speech.
+    Does NOT send tts_start/tts_end - callers bracket a whole response
+    (which may be several chunks) with those, per docs/architecture.md §6."""
     if not text.strip():
         return
     tts = get_tts_service()
-    await session.send_json({"type": "tts_start"})
     try:
         async for chunk in tts.synthesize_stream_async(text, session.agent.voice_id):
             await session.ws.send_bytes(chunk)
@@ -198,5 +242,3 @@ async def _speak(session: VoiceSession, text: str) -> None:
         raise
     except Exception as exc:  # noqa: BLE001
         await session.send_json({"type": "error", "message": str(exc)})
-    finally:
-        await session.send_json({"type": "tts_end"})
