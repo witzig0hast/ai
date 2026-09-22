@@ -5,7 +5,7 @@ from sqlmodel import Session
 
 from app.config import get_settings
 from app.database import engine
-from app.services import reminder_service
+from app.services import memory_service, reminder_service
 from app.services.integrations.home_assistant import HomeAssistantClient
 from app.services.integrations.n8n import N8nClient
 from app.services.weather_service import get_weather_service
@@ -72,6 +72,44 @@ TOOL_SCHEMAS: list[dict] = [
                 "type": "object",
                 "properties": {"reminder_id": {"type": "string"}},
                 "required": ["reminder_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "remember_fact",
+            "description": (
+                "Merkt sich einen Fakt über den Nutzer dauerhaft (z.B. Name, "
+                "Vorlieben, wiederkehrende Infos), der dir künftig in jedem "
+                "Gespräch automatisch mitgegeben wird."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "text": {"type": "string", "description": "Der zu merkende Fakt, kurz und klar formuliert"}
+                },
+                "required": ["text"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "list_remembered_facts",
+            "description": "Listet alle Fakten auf, die du dir bisher über den Nutzer gemerkt hast.",
+            "parameters": {"type": "object", "properties": {}},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "forget_fact",
+            "description": "Löscht einen zuvor gemerkten Fakt anhand seiner ID.",
+            "parameters": {
+                "type": "object",
+                "properties": {"fact_id": {"type": "string"}},
+                "required": ["fact_id"],
             },
         },
     },
@@ -196,6 +234,29 @@ async def _cancel_reminder(arguments: dict, _conversation_id: str | None) -> dic
         return {"cancelled": ok}
 
 
+async def _remember_fact(arguments: dict, _conversation_id: str | None) -> dict:
+    text = arguments.get("text")
+    if not text:
+        return {"error": "text fehlt."}
+    with Session(engine) as session:
+        fact = memory_service.remember(session, text)
+        return {"id": fact.id, "text": fact.text}
+
+
+async def _list_remembered_facts(_arguments: dict, _conversation_id: str | None) -> dict:
+    with Session(engine) as session:
+        facts = memory_service.list_facts(session)
+        return {"facts": [{"id": f.id, "text": f.text} for f in facts]}
+
+
+async def _forget_fact(arguments: dict, _conversation_id: str | None) -> dict:
+    fact_id = arguments.get("fact_id")
+    if not fact_id:
+        return {"error": "fact_id fehlt."}
+    with Session(engine) as session:
+        return {"forgotten": memory_service.forget(session, fact_id)}
+
+
 async def _home_assistant_call_service(arguments: dict, _conversation_id: str | None) -> dict:
     client = HomeAssistantClient()
     if not client.enabled:
@@ -236,6 +297,9 @@ _HANDLERS = {
     "create_reminder": _create_reminder,
     "list_reminders": _list_reminders,
     "cancel_reminder": _cancel_reminder,
+    "remember_fact": _remember_fact,
+    "list_remembered_facts": _list_remembered_facts,
+    "forget_fact": _forget_fact,
     "home_assistant_call_service": _home_assistant_call_service,
     "home_assistant_get_state": _home_assistant_get_state,
     "trigger_n8n_workflow": _trigger_n8n_workflow,

@@ -98,6 +98,10 @@ Vertrag unter `docs/architecture.md` §9–§13. Kurzfassung:
   Sprachdialog. Läuft transparent: normale Antworten ohne Tool-Bedarf
   streamen weiterhin Token für Token wie bisher, nur wenn das Modell
   tatsächlich ein Tool anfragt, gibt es eine (unsichtbare) Zwischenrunde.
+- **Langzeit-Gedächtnis** (`app/services/memory_service.py`, `/api/memory`):
+  Fakten, die sich der Agent über dich merkt (per Tool oder manuell über die
+  API), werden automatisch in jede Chat-/Voice-Anfrage eingespeist –
+  konversationsübergreifend, transparent einsehbar/löschbar.
 - **Reminder/Timer**: `/api/reminders` (CRUD) + ein Hintergrund-Task
   (`app/services/reminder_scheduler.py`), der fällige Reminder alle
   `REMINDER_POLL_INTERVAL_SECONDS` erkennt und über `/ws/events` pusht.
@@ -119,7 +123,7 @@ Vertrag unter `docs/architecture.md` §9–§13. Kurzfassung:
 
 ## Bekannte Einschränkungen
 
-Siehe `docs/architecture.md` §14 (Auth ist ein einfacher geteilter
+Siehe `docs/architecture.md` §15 (Auth ist ein einfacher geteilter
 Bearer-Token, kein OAuth/mTLS — für den Domain-Einsatz vor Produktivbetrieb
 härten). Die Tool-Loop begrenzt sich auf maximal 4 Runden pro Anfrage, um
 Endlosschleifen zu verhindern.

@@ -227,6 +227,8 @@ Verfügbare Tools (`app/services/tools.py`):
 - `create_reminder` – legt einen Reminder an (Text + Fälligkeitszeitpunkt)
 - `list_reminders` – offene Reminder auflisten
 - `cancel_reminder` – Reminder per ID stornieren
+- `remember_fact` / `list_remembered_facts` / `forget_fact` – dauerhaftes
+  Gedächtnis (§14) verwalten
 - `home_assistant_call_service` / `home_assistant_get_state` – nur wirksam,
   wenn `HOME_ASSISTANT_ENABLED=true`, sonst liefert das Tool einen Hinweis
   statt eines Fehlers
@@ -299,7 +301,31 @@ Open-Meteo-API an (`HOME_LATITUDE`/`HOME_LONGITUDE` in `.env`). Ohne
 gesetzte Koordinaten bleibt das Feature inaktiv (Tool liefert einen
 Hinweistext statt eines Fehlers, Briefing lässt den Wetterteil einfach weg).
 
-## 14. Bekannte Einschränkungen dieses Grundgerüsts
+## 14. Erweiterung: Langzeit-Gedächtnis
+
+```
+MemoryFact
+  id: str (uuid)
+  text: str
+  created_at: datetime
+```
+
+REST unter `/api/memory`:
+- `GET /api/memory` → `MemoryFact[]`
+- `POST /api/memory` `{"text": "..."}` → `MemoryFact`
+- `DELETE /api/memory/{id}`
+
+`app/services/memory_service.py` baut aus allen gemerkten Fakten einen
+zusätzlichen System-Message-Block (`facts_as_system_message`), der in
+**jeder** Chat-/Voice-Anfrage direkt nach dem Agent-System-Prompt
+eingefügt wird (siehe `routes_chat.py`/`ws/voice.py`) – der Agent "erinnert"
+sich damit konversationsübergreifend, ohne dass die Nutzerin/der Nutzer
+etwas wiederholen muss. Der Default-Agent ist angewiesen, `remember_fact`
+proaktiv zu nutzen, wenn im Gespräch dauerhaft relevante Infos auftauchen
+(§9). `/api/memory` dient der Transparenz: jederzeit einsehbar und löschbar,
+was sich der Agent gemerkt hat.
+
+## 15. Bekannte Einschränkungen dieses Grundgerüsts
 
 - Auth ist ein einfacher geteilter Bearer-Token pro Gerät, kein OAuth/mTLS –
   für den öffentlichen Domain-Einsatz sollte das vor Produktivbetrieb

@@ -9,6 +9,7 @@ from app.core.security import require_device_token
 from app.database import engine, get_session
 from app.models.agent import Agent
 from app.models.conversation import Conversation, Message, MessageRead
+from app.services import memory_service
 from app.services.agent_service import ensure_default_agent
 from app.services.ollama_client import OllamaClient
 from app.services.suggestions import generate_suggestions
@@ -56,6 +57,9 @@ async def chat(
         .order_by(Message.created_at)
     ).all()
     ollama_messages = [{"role": "system", "content": agent.system_prompt}]
+    memory_block = memory_service.facts_as_system_message(session)
+    if memory_block:
+        ollama_messages.append({"role": "system", "content": memory_block})
     ollama_messages += [{"role": m.role, "content": m.content} for m in history]
 
     agent_id, agent_model, conversation_id = agent.id, agent.ollama_model, conversation.id

@@ -13,6 +13,7 @@ from app.api import (
     routes_chat,
     routes_files,
     routes_history,
+    routes_memory,
     routes_reminders,
     routes_status,
 )
@@ -40,7 +41,7 @@ async def lifespan(_app: FastAPI):
 app = FastAPI(title="Jarvis Backend", version="0.1.0", lifespan=lifespan)
 
 # Permissive CORS for now (personal single-user deployment behind its own
-# domain) - see docs/architecture.md §14 for the auth hardening note.
+# domain) - see docs/architecture.md §15 for the auth hardening note.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -55,6 +56,7 @@ app.include_router(routes_chat.router)
 app.include_router(routes_files.router)
 app.include_router(routes_calendar.router)
 app.include_router(routes_reminders.router)
+app.include_router(routes_memory.router)
 app.include_router(routes_briefing.router)
 app.include_router(voice.router)
 app.include_router(events.router)

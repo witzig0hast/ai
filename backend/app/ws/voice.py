@@ -9,6 +9,7 @@ from app.database import engine
 from app.models.agent import Agent
 from app.models.conversation import Conversation, Message
 from app.services.agent_service import ensure_default_agent
+from app.services import memory_service
 from app.services.briefing_service import compose_briefing
 from app.services.ollama_client import OllamaClient
 from app.services.sentence_splitter import split_ready_sentence
@@ -158,7 +159,11 @@ async def _handle_utterance(session: VoiceSession, pcm_bytes: bytes) -> None:
             .order_by(Message.created_at)
         ).all()
 
+        memory_block = memory_service.facts_as_system_message(db)
+
     ollama_messages = [{"role": "system", "content": session.agent.system_prompt}]
+    if memory_block:
+        ollama_messages.append({"role": "system", "content": memory_block})
     ollama_messages += [{"role": m.role, "content": m.content} for m in history]
 
     client = OllamaClient()
