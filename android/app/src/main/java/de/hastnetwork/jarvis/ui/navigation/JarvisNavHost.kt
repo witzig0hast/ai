@@ -10,6 +10,7 @@ import androidx.navigation.navArgument
 import de.hastnetwork.jarvis.ui.screens.chat.ChatScreen
 import de.hastnetwork.jarvis.ui.screens.history.HistoryScreen
 import de.hastnetwork.jarvis.ui.screens.home.HomeScreen
+import de.hastnetwork.jarvis.ui.screens.memory.MemoryScreen
 import de.hastnetwork.jarvis.ui.screens.reminders.RemindersScreen
 import de.hastnetwork.jarvis.ui.screens.settings.SettingsScreen
 import de.hastnetwork.jarvis.ui.screens.voice.VoiceScreen
@@ -26,6 +27,7 @@ object JarvisDestinations {
     const val HISTORY = "history"
     const val SETTINGS = "settings"
     const val REMINDERS = "reminders"
+    const val MEMORY = "memory"
 
     private const val VOICE_BASE = "voice"
     private const val CHAT_BASE = "chat"
@@ -110,11 +112,18 @@ fun JarvisNavHost(navController: NavHostController = rememberNavController()) {
         }
 
         composable(JarvisDestinations.SETTINGS) {
-            SettingsScreen(onBack = { navController.popBackStack() })
+            SettingsScreen(
+                onBack = { navController.popBackStack() },
+                onOpenMemory = { navController.navigate(JarvisDestinations.MEMORY) },
+            )
         }
 
         composable(JarvisDestinations.REMINDERS) {
             RemindersScreen(onBack = { navController.popBackStack() })
+        }
+
+        composable(JarvisDestinations.MEMORY) {
+            MemoryScreen(onBack = { navController.popBackStack() })
         }
     }
 }

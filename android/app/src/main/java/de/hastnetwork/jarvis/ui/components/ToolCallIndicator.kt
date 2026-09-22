@@ -29,6 +29,9 @@ fun toolCallFriendlyLabel(name: String): String = when (name) {
     "cancel_reminder" -> "storniere Erinnerung"
     "home_assistant_call_service", "home_assistant_get_state" -> "spreche mit Home Assistant"
     "trigger_n8n_workflow" -> "starte n8n-Workflow"
+    "remember_fact" -> "merke mir das"
+    "list_remembered_facts" -> "prüfe Gedächtnis"
+    "forget_fact" -> "vergesse das"
     else -> name
 }
 

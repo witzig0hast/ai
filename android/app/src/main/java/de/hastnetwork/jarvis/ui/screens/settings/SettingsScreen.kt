@@ -8,10 +8,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
@@ -34,7 +36,7 @@ import de.hastnetwork.jarvis.data.local.DarkModeOverride
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(onBack: () -> Unit) {
+fun SettingsScreen(onBack: () -> Unit, onOpenMemory: () -> Unit) {
     val app = LocalContext.current.applicationContext as JarvisApp
     val viewModel: SettingsViewModel = viewModel(
         factory = viewModelFactory {
@@ -106,6 +108,11 @@ fun SettingsScreen(onBack: () -> Unit) {
                     RadioButton(selected = settings.darkModeOverride == mode, onClick = { viewModel.updateDarkModeOverride(mode) })
                     Text(text = label, modifier = Modifier.padding(start = 4.dp))
                 }
+            }
+
+            OutlinedButton(onClick = onOpenMemory, modifier = Modifier.fillMaxWidth()) {
+                Icon(Icons.Filled.Psychology, contentDescription = null, modifier = Modifier.padding(end = 8.dp))
+                Text(stringResource(R.string.settings_manage_memory))
             }
         }
     }

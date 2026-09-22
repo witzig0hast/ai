@@ -60,6 +60,12 @@
     <string name="settings_dark_mode_light">Immer hell</string>
     <string name="settings_dark_mode_dark">Immer dunkel</string>
     <string name="settings_saved">Gespeichert</string>
+    <string name="settings_manage_memory">Gedächtnis verwalten</string>
+
+    <!-- Memory -->
+    <string name="memory_title">Gedächtnis</string>
+    <string name="memory_empty">Jarvis hat sich noch nichts gemerkt.</string>
+    <string name="memory_delete">Vergessen</string>
 
     <!-- Reminders -->
     <string name="reminders_title">Erinnerungen</string>

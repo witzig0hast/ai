@@ -7,6 +7,8 @@ import de.hastnetwork.jarvis.data.model.CalendarEvent
 import de.hastnetwork.jarvis.data.model.ConversationDetail
 import de.hastnetwork.jarvis.data.model.ConversationSummary
 import de.hastnetwork.jarvis.data.model.FileUploadResponse
+import de.hastnetwork.jarvis.data.model.MemoryFact
+import de.hastnetwork.jarvis.data.model.MemoryFactCreateRequest
 import de.hastnetwork.jarvis.data.model.Reminder
 import de.hastnetwork.jarvis.data.model.ReminderCreateRequest
 import de.hastnetwork.jarvis.data.model.StatusResponse
@@ -78,4 +80,13 @@ interface JarvisApi {
 
     @GET("api/briefing/today")
     suspend fun getTodayBriefing(): BriefingResponse
+
+    @GET("api/memory")
+    suspend fun getMemoryFacts(): List<MemoryFact>
+
+    @POST("api/memory")
+    suspend fun createMemoryFact(@Body body: MemoryFactCreateRequest): MemoryFact
+
+    @DELETE("api/memory/{id}")
+    suspend fun deleteMemoryFact(@Path("id") id: String): Response<Void>
 }

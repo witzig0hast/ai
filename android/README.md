@@ -126,6 +126,18 @@ The backend was extended after the first pass; the app was updated to match:
   needed there since the caption `Text` already wraps freely with no
   `maxLines` cap - verified by re-reading `VoiceScreen.kt`'s
   `CaptionsList`.
+- **Long-term memory** (§14): `data/model/MemoryFact.kt`,
+  `data/repository/MemoryRepository.kt`, `JarvisApi.kt` (`GET/POST
+  /api/memory`, `DELETE /api/memory/{id}`), and a new
+  `ui/screens/memory/{MemoryScreen.kt,MemoryViewModel.kt}` - list of
+  remembered facts with a delete icon per row, **no create UI** (the agent
+  writes facts itself via the `remember_fact` tool; this screen is purely
+  transparency/control, per the coordinator's instruction). Entry point:
+  an OutlinedButton "Gedächtnis verwalten" on the Settings screen
+  (deliberately not on Home, to keep the ambient look uncluttered). The
+  three new tool names (`remember_fact`, `list_remembered_facts`,
+  `forget_fact`) got German labels in
+  `ui/components/ToolCallIndicator.kt#toolCallFriendlyLabel`.
 - **Proactive push channel** (§11): `data/remote/EventsSocket.kt` wraps
   `wss://.../ws/events` - receive-only, with exponential backoff
   reconnect (2s, doubling, capped at 60s, reset on a successful open).

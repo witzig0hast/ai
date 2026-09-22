@@ -12,6 +12,7 @@ import de.hastnetwork.jarvis.data.remote.VoiceSocket
 import de.hastnetwork.jarvis.data.repository.AgentRepository
 import de.hastnetwork.jarvis.data.repository.BriefingRepository
 import de.hastnetwork.jarvis.data.repository.ConversationRepository
+import de.hastnetwork.jarvis.data.repository.MemoryRepository
 import de.hastnetwork.jarvis.data.repository.ReminderRepository
 import de.hastnetwork.jarvis.data.repository.StatusRepository
 import de.hastnetwork.jarvis.data.repository.VoiceRepository
@@ -88,6 +89,7 @@ class AppContainer(private val appContext: Context) {
     val statusRepository = StatusRepository(api)
     val reminderRepository = ReminderRepository(api)
     val briefingRepository = BriefingRepository(api)
+    val memoryRepository = MemoryRepository(api)
 
     init {
         applicationScope.launch {
