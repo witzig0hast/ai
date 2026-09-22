@@ -187,8 +187,15 @@ sofort gestoppt (AudioTrack `pause()+flush()`).
 ```
 backend/    FastAPI-Service ("Jarvis Core")
 android/    Natives Kotlin-App ("Jarvis Android"), Jetpack Compose
+kiosk/      Browser-Kiosk-Client für Raspberry Pi + Touchdisplay (Vanilla JS)
 docs/       dieses Dokument + weitere Notizen
 ```
+
+`kiosk/` ist ein drittes, unabhängiges Frontend gegen denselben Vertrag
+(REST + `/ws/voice` + `/ws/events`) - das ursprünglich vorgesehene
+"Raspberry Pi mit Touchdisplay als physisches Interface". Kein Framework,
+kein Build-Schritt: läuft direkt als statische Seite in Chromium im
+Kiosk-Modus. Details in `kiosk/README.md`.
 
 ## 8. Home Assistant / n8n – bewusst nur Stubs
 

@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <title>Jarvis</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div id="app">
+
+    <!-- Home: ambient clock/date, dezenter Status, Wetter-Chip, Termin-Ticker.
+         Tap irgendwo -> direkt in den Voice-Modus (kein Zwischen-Screen). -->
+    <section id="screen-home" class="screen active">
+      <button id="reminders-btn" class="icon-btn corner-tl" title="Reminder" aria-label="Reminder">⏰</button>
+      <button id="settings-btn" class="icon-btn corner-tl-2" title="Einstellungen" aria-label="Einstellungen">⚙️</button>
+      <button id="dark-toggle" class="icon-btn corner-tr" title="Darstellung" aria-label="Darstellung">🌙</button>
+
+      <div class="home-center" id="home-tap-target">
+        <div class="clock" id="clock">--:--</div>
+        <div class="date" id="date">&nbsp;</div>
+        <div class="weather-chip hidden" id="weather-chip"></div>
+      </div>
+
+      <div class="events-ticker hidden" id="events-ticker"></div>
+
+      <div class="status-row" id="status-row"></div>
+      <div class="status-detail hidden" id="status-detail"></div>
+    </section>
+
+    <!-- Voice: gesprochene Begrüßung/Briefing, Untertitel, Barge-in, Wechsel zu Chat. -->
+    <section id="screen-voice" class="screen">
+      <header class="top-bar">
+        <button id="voice-back" class="icon-btn" aria-label="Zurück">←</button>
+        <button id="voice-agent-indicator" class="agent-indicator"></button>
+        <button id="voice-captions-toggle" class="icon-btn" aria-label="Untertitel">CC</button>
+      </header>
+
+      <div class="voice-body">
+        <div class="voice-orb" id="voice-orb"></div>
+        <div class="voice-status" id="voice-status">Verbinde …</div>
+        <div class="captions-list" id="captions-list"></div>
+      </div>
+
+      <footer class="voice-footer">
+        <button id="voice-switch-chat" class="pill-btn">💬 Zu Text wechseln</button>
+      </footer>
+    </section>
+
+    <!-- Chat: ChatGPT-artig, Vorschläge unter der letzten Antwort, Verlauf, Anhänge. -->
+    <section id="screen-chat" class="screen">
+      <header class="top-bar">
+        <button id="chat-back" class="icon-btn" aria-label="Zurück">←</button>
+        <button id="chat-agent-indicator" class="agent-indicator"></button>
+        <button id="chat-history-btn" class="icon-btn" aria-label="Verlauf">🕘</button>
+      </header>
+
+      <div class="messages" id="messages"></div>
+
+      <div class="pending-attachments hidden" id="pending-attachments"></div>
+
+      <footer class="chat-input-bar">
+        <button id="chat-attach-btn" class="icon-btn" aria-label="Anhang">📎</button>
+        <input type="file" id="chat-file-input" class="hidden" />
+        <input type="text" id="chat-input" placeholder="Nachricht an Jarvis …" autocomplete="off" />
+        <button id="chat-mic-btn" class="icon-btn" aria-label="Sprechen">🎙️</button>
+        <button id="chat-send-btn" class="icon-btn" aria-label="Senden">➤</button>
+      </footer>
+
+      <aside id="history-panel" class="history-panel hidden">
+        <div class="history-panel-header">
+          <span>Verlauf</span>
+          <button id="history-close-btn" class="icon-btn" aria-label="Schließen">✕</button>
+        </div>
+        <div id="history-list" class="history-list"></div>
+      </aside>
+    </section>
+
+    <!-- Reminder: Liste + Anlegen + Löschen -->
+    <section id="screen-reminders" class="screen">
+      <header class="top-bar">
+        <button id="reminders-back" class="icon-btn" aria-label="Zurück">←</button>
+        <span class="screen-title">Reminder</span>
+        <span class="icon-btn-spacer"></span>
+      </header>
+
+      <div class="reminders-list" id="reminders-list"></div>
+
+      <form id="reminder-form" class="reminder-form">
+        <input type="text" id="reminder-text" placeholder="Woran erinnern?" required />
+        <div class="reminder-quick-chips" id="reminder-quick-chips">
+          <button type="button" data-minutes="10">in 10 Min</button>
+          <button type="button" data-minutes="30">in 30 Min</button>
+          <button type="button" data-minutes="60">in 1 Std</button>
+        </div>
+        <input type="datetime-local" id="reminder-datetime" />
+        <button type="submit" class="pill-btn">Reminder anlegen</button>
+      </form>
+    </section>
+
+    <!-- Settings -->
+    <section id="screen-settings" class="screen">
+      <header class="top-bar">
+        <button id="settings-back" class="icon-btn" aria-label="Zurück">←</button>
+        <span class="screen-title">Einstellungen</span>
+        <span class="icon-btn-spacer"></span>
+      </header>
+
+      <form id="settings-form" class="settings-form">
+        <label>
+          Backend-URL
+          <input type="url" id="settings-backend-url" placeholder="https://jarvis.example.tld" required />
+        </label>
+        <label>
+          Geräte-Token
+          <input type="text" id="settings-token" placeholder="Device-Token" />
+        </label>
+        <label>
+          Darstellung
+          <select id="settings-dark-mode">
+            <option value="system">System</option>
+            <option value="light">Hell</option>
+            <option value="dark">Dunkel</option>
+          </select>
+        </label>
+        <button type="submit" class="pill-btn">Speichern</button>
+      </form>
+      <p class="settings-hint">
+        Mikrofonzugriff braucht HTTPS (oder localhost) - siehe kiosk/README.md.
+      </p>
+    </section>
+
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
